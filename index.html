@@ -2,23 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Simple Weather App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather App</title>
+
+  <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Current weather report</h1>
 
-  <input
-    type="text"
-    id="cityInput"
-    placeholder="Enter city name"
-  />
-  <button id="searchBtn">Search</button>
+  <div class="app-container">
+    <h1 class="title">Weather</h1>
 
-  <ul id="results"></ul>
+    <div class="search">
+      <input
+        id="cityInput"
+        type="text"
+        placeholder="Enter city name"
+        autocomplete="off"
+      />
+      <button id="searchBtn">Search</button>
+    </div>
 
-  <div id="weather"></div>
+    <ul id="results" class="results"></ul>
 
-  <script src="app.js"></script>
+    <div id="weather" class="weather"></div>
+  </div>
+
+  <!-- App entry point -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>

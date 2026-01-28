@@ -1,93 +1,106 @@
-const API_KEY = "23cdee0774e73881c1344ae4375658ba";
+import {
+  fetchCities,
+  fetchWeather,
+  formatWeatherData
+} from "./script.js";
 
+// =====================
+// DOM ELEMENTS
+// =====================
 const cityInput = document.getElementById("cityInput");
 const searchBtn = document.getElementById("searchBtn");
 const resultsList = document.getElementById("results");
 const weatherDiv = document.getElementById("weather");
 
-searchBtn.addEventListener("click", searchCity);
+// =====================
+// EVENT LISTENERS
+// =====================
+searchBtn.addEventListener("click", onSearchClick);
 
-async function searchCity() {
+// Optional: press Enter to search
+cityInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    onSearchClick();
+  }
+});
+
+// =====================
+// UI LOGIC
+// =====================
+async function onSearchClick() {
   const query = cityInput.value.trim();
   if (!query) return;
 
-  resultsList.innerHTML = "";
-  weatherDiv.innerHTML = "";
-
-  const url = `https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${API_KEY}`;
+  clearUI();
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    const cities = await fetchCities(query);
 
-    data.forEach(location => {
-      const li = document.createElement("li");
-      li.textContent = `${location.name}, ${location.country}`;
-      li.addEventListener("click", () =>
-        fetchWeather(location.lat, location.lon)
-      );
-      resultsList.appendChild(li);
-    });
-  } catch (err) {
-    console.error(err);
+    if (cities.length === 0) {
+      showMessage("No cities found");
+      return;
+    }
+
+    renderCityResults(cities);
+  } catch (error) {
+    console.error(error);
+    showMessage("Failed to load cities");
   }
 }
 
-async function fetchWeather(lat, lon) {
-  const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+async function onCitySelected(lat, lon) {
+  weatherDiv.innerHTML = "Loading weather...";
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    const data = await fetchWeather(lat, lon);
+    const weather = formatWeatherData(data);
+    renderWeather(weather);
+  } catch (error) {
+    console.error(error);
+    showMessage("Failed to load weather");
+  }
+}
 
-    const temp = data.main.temp;
-    const wind = data.wind.speed;
+// =====================
+// RENDER FUNCTIONS
+// =====================
+function renderCityResults(cities) {
+  resultsList.innerHTML = "";
 
-    const weatherIconId = data.weather[0].icon;
-    const weatherIconUrl = `https://openweathermap.org/img/wn/${weatherIconId}.png`;
-    const hourly = await fetchHourlyForecast(lat, lon);
+  cities.forEach(city => {
+    const li = document.createElement("li");
+    li.className = "city-item";
+    li.textContent = `${city.name}, ${city.country}`;
 
-    const hourlyHtml = hourly.map(h => `
-      <div class="hour">
-        <div class="hour-time">${h.time}</div>
-        <img src="https://openweathermap.org/img/wn/${h.icon}.png">
-        <div class="hour-temp">${h.temp}°</div>
-      </div>
-    `).join("");
+    li.addEventListener("click", () => {
+      resultsList.innerHTML = "";
+      onCitySelected(city.lat, city.lon);
+    });
 
-    weatherDiv.innerHTML = `
+    resultsList.appendChild(li);
+  });
+}
+
+function renderWeather(weather) {
+  const iconUrl = `https://openweathermap.org/img/wn/${weather.icon}@2x.png`;
+
+  weatherDiv.innerHTML = `
     <div class="weather-card">
-      <img src="${weatherIconUrl}" alt="Weather Icon"><br>
+      <img src="${iconUrl}" alt="${weather.description}" />
       <div class="weather-info">
-        <div class="temperature"> ${temp} °C</div>
-        <div class="wind">Wind: ${wind} m/s</div>
+        <div class="temp">${weather.temp}°C</div>
+        <div class="wind">💨 ${weather.wind} m/s</div>
+        <div class="desc">${weather.description}</div>
       </div>
     </div>
-
-    <div class="hourly">
-      ${hourlyHtml}
-    </div>`;
-
-  } catch (err) {
-    console.error(err);
-  }
+  `;
 }
 
-async function fetchHourlyForecast(lat, lon) {
-  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+function clearUI() {
+  resultsList.innerHTML = "";
+  weatherDiv.innerHTML = "";
+}
 
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-
-    // Take next 4 entries (each is +3h)
-    return data.list.slice(0, 4).map(item => ({
-      time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      temp: Math.round(item.main.temp),
-      icon: item.weather[0].icon
-    }));
-  } catch (err) {
-    console.error("Forecast fetch error:", err);
-    return [];
-  }
+function showMessage(message) {
+  weatherDiv.innerHTML = `<div class="message">${message}</div>`;
 }
