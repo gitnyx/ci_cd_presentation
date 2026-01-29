@@ -1,0 +1,9 @@
+{
+  "name": "weather-app",
+  "version": "1.0.0",
+  "description": "Simple weather web app",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
