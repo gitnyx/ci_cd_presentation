@@ -25,19 +25,29 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: Build app
-        run: npm run build   # Make sure your package.json has a build script
-          
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: ./build      # Path to your static files (React: build, Vue: dist)
-
+        
   test:
     runs-on: ubuntu-latest
     needs: build
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run unit tests
+      run: npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Checkout repository
@@ -50,37 +60,14 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: Run unit tests
-        run: npm test
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [build, test]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: ./build
-
+        
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./build
+          path: .
 
       - name: Deploy to GitHub Pages
-        id: deploy
         uses: actions/deploy-pages@v4
